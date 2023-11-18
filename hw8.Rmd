@@ -1,0 +1,106 @@
+---
+title: "HW8"
+author: "S610"
+date: "2023-11-16"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#1
+```{r}
+# Accept-Reject function for Beta distribution
+  aj_beta <- function(alpha, beta, n) {
+  accepted_samples <- numeric(0)
+  proposals <- 0
+  
+  while (length(accepted_samples) < n) {
+    x <- runif(1)  # Uniform proposal
+    proposal_density <- 1
+    target_density <- dbeta(x, alpha, beta)
+    accept_prob <- target_density / proposal_density
+    
+    if (runif(1) < accept_prob) {
+      accepted_samples <- c(accepted_samples, x)
+    }
+    
+    proposals <- proposals + 1
+  }
+  
+  list(samples = accepted_samples, avg_proposals = proposals / n)
+}
+
+# Example usage for Beta(2, 2) and Beta(10, 10)
+beta_a <- aj_beta(2, 2, 1000)
+beta_b <- aj_beta(10, 10, 1000)
+
+# Plot histograms
+hist(beta_a$samples, main = "Histogram of Beta(2, 2) Samples", xlab = "Samples")
+hist(beta_b$samples, main = "Histogram of Beta(10, 10) Samples", xlab = "Samples")
+
+# Average proposals
+cat("Average proposals for Beta(2, 2):", beta_a$avg_proposals, "\n")
+cat("Average proposals for Beta(10, 10):", beta_b$avg_proposals, "\n")
+
+```
+
+From the two histogram, Beta(2,2) has more bars than Beta(10,10), 
+and its shape of distribution is flatter compared to Beta(10,10).
+The two histogram almost symmetric.
+Beta(2,2) resembles a uniform distribution.
+And the two distribution peak around the middle (at 1/2). 
+when we use a uniform distribution as the proposal distribution, the acceptance probability will be relatively high. 
+But the Beta(10,10)is more peaked in the middle and has thinner tails compared to Beta(2, 2). 
+Because Beta(10,10) is less similar to the uniform distribution. 
+The difference in shape means that a randomly drawn value from the uniform distribution 
+is less likely to be under the peak of the Beta(10, 10) distribution. 
+So, the acceptance probability is lower, leading to more proposals on average being needed to accept a sample.
+
+#2
+```{r}
+# Monte Carlo estimation
+monte_carlo <- function(n) {
+  u <- runif(n)
+  mean(cos(pi * u / 2))
+}
+
+# Importance sampling estimation
+  is_e <- function(n) {
+  x <- rbeta(n, 1, 1.5)
+  weights <- dbeta(x, 1, 1.5)
+  mean(cos(pi * x / 2) / weights)
+}
+
+# Variance estimation and comparison
+n_samples <- 1000
+x <- rbeta(n_samples, 1, 1.5)
+mc_estimate <- monte_carlo(n_samples)
+is_estimate <- is_e(n_samples)
+
+mc_variance <- var(cos(pi * runif(n_samples) / 2))
+is_variance <- var(cos(pi * rbeta(n_samples, 1, 1.5) / 2) / dbeta(x, 1, 1.5))
+
+cat("Monte Carlo Estimate:", mc_estimate, "Variance:", mc_variance, "\n")
+cat("Importance Sampling Estimate:", is_estimate, "Variance:", is_variance, "\n")
+
+```
+The difference of the estimate casued by the nature of the methods 
+and how they handle the underlying probability distributions.
+
+Monte Carlo Method:
+It directly measure the spread of the function' values at the random points. 
+Since the function cos(pi * x / 2) does not vary wildly over the interval [0, 1], 
+the variance is relatively low.
+
+Importance Sampling:
+The variance in importance sampling depends on how well the chosen distribution 
+(importance distribution) aligns with the function being integrated. 
+If the importance distribution does not closely match the shape of the function, 
+the variance can be higher.
+In this question, the choice of Beta(1, 1.5) as the importance distribution might not 
+be optimal for the function cos(pi * x / 2). 
+This could be a mismatch that lead to less efficient sampling and higher variance.
